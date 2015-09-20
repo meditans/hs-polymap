@@ -1,2 +1,2 @@
 # hs-polymap
-polydirectional maps for Haskell
+Polydirectional maps for Haskell with flexible collection and relation storage.
