@@ -1,10 +1,13 @@
 {-# LANGUAGE Safe #-}
+{-# LANGUAGE GADTs #-}
 {-# LANGUAGE DataKinds #-}
 {-# LANGUAGE KindSignatures #-}
 {-# LANGUAGE TypeFamilies #-}
 {-# LANGUAGE TypeOperators #-}
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE FlexibleContexts #-}
+{-# LANGUAGE MultiParamTypeClasses #-}
+{-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE StandaloneDeriving #-}
 
 {-|
@@ -12,20 +15,52 @@
   Copyright   : (c) 2015 David Farrell
   License     : PublicDomain
   Stability   : unstable
-  Portability : portable
+  Portability : non-portable (GHC extensions)
 
   Polydirectional maps.
 -}
 
 module Data.PolyMap
-( PolyMap
-, Relation(..)
+( Relation((:<->:), UnitRelation)
+, PolyMap
+, Data.PolyMap.null
+, size
 , empty
 , singleton
 , insert
 ) where
 
-data family PolyMap :: [*] -> *
+-- Nat
+
+data Nat = Z | S Nat
+
+-- HasType
+
+type family HasType a (as :: [*]) :: Bool where
+    HasType a '[] = 'False
+    HasType a (a ': as) = 'True
+    HasType a (b ': as) = HasType a as
+
+-- TypeAt
+
+type family TypeAt (n :: Nat) (as :: [*]) where
+    TypeAt 'Z (a ': as) = a
+    TypeAt ('S n) (a ': as) = TypeAt n as
+
+-- Relation
+
+data family Relation (as :: [*])
+data instance Relation '[] = UnitRelation
+data instance Relation (a ': as) = a :<->: Relation as
+
+infixr 4 :<->:
+
+deriving instance Show (Relation '[])
+deriving instance (Show a, Show (Relation as)) => Show (Relation (a ': as))
+
+-- PolyMap
+
+data family PolyMap (as :: [*]) :: *
 data instance PolyMap '[] = UnitPolyMap
 data instance PolyMap (a ': as) = [a] :<=>: PolyMap as
 
@@ -34,14 +69,7 @@ infixr 4 :<=>:
 deriving instance Show (PolyMap '[])
 deriving instance (Show a, Show (PolyMap as)) => Show (PolyMap (a ': as))
 
-data family Relation :: [*] -> *
-data instance Relation '[] = UnitRelation
-data instance Relation (a ': as) = a :<->: Relation as
-
-infixr 4 :<->:
-
-deriving instance Show (Relation '[])
-deriving instance (Show a, Show (Relation as)) => Show (Relation (a ': as))
+-- PolyMapClass
 
 class PolyMapClass (as :: [*]) where
     null :: PolyMap as -> Bool
@@ -58,10 +86,20 @@ instance PolyMapClass '[] where
     insert UnitRelation UnitPolyMap = UnitPolyMap
 
 instance PolyMapClass as => PolyMapClass (a ': as) where
-    null ([] :<=>: _) = True
-    null (_  :<=>: _) = False
-    size ([] :<=>: _) = 0
+    null (xs :<=>: _) = Prelude.null xs
     size (xs :<=>: _) = length xs
     empty = [] :<=>: empty
     singleton (x :<->: xs) = [x] :<=>: singleton xs
     insert (x :<->: xs) (m :<=>: ms) = x:m :<=>: insert xs ms
+
+class PolyMapClassWithNat (n :: Nat) (as :: [*]) where
+    member :: TypeAt n as -> PolyMap as -> Bool
+
+instance PolyMapClassWithNat n '[] where
+    member _ UnitPolyMap = False
+
+instance Eq a => PolyMapClassWithNat 'Z (a ': as) where
+    member x (xs :<=>: _) = elem x xs
+
+instance PolyMapClassWithNat ('S n) (a ': as) where
+    member (x :: TypeAt n as) (_ :<=>: ms) = member x ms
