@@ -2,7 +2,6 @@
 {-# LANGUAGE DataKinds #-}
 
 import Data.PolyMap.Nat
-import Data.PolyMap (Relation((:<->:)))
 import qualified Data.PolyMap as PM
 
 main = do
@@ -17,6 +16,6 @@ empty :: PM.PolyMap '[String, Integer]
 empty = PM.empty
 
 singleton :: PM.PolyMap '[String, Integer]
-singleton = PM.singleton $ "one" :<->: 1 :<->: PM.UnitRelation
+singleton = PM.singleton ("one", 1 :: Integer)
 
-twoPM = PM.insert ("two" :<->: 2 :<->: PM.UnitRelation) singleton
+twoPM = PM.insert ("two", 2 :: Integer) singleton
