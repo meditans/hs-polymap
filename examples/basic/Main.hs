@@ -1,3 +1,4 @@
+{-# LANGUAGE Safe #-}
 {-# LANGUAGE DataKinds #-}
 
 import Data.PolyMap.Nat
