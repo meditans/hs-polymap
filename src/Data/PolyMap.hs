@@ -22,7 +22,6 @@
 
 module Data.PolyMap
 ( Nat(..)
-, NatProxy(..)
 , Relation(..)
 , PolyMap
 , Data.PolyMap.null
@@ -33,10 +32,7 @@ module Data.PolyMap
 , insert
 ) where
 
--- Nat
-
-data Nat = Z | S Nat
-data NatProxy (a :: Nat) = NatProxy
+import Data.PolyMap.Nat
 
 -- HasType
 
@@ -97,13 +93,13 @@ instance PolyMapClass as => PolyMapClass (a ': as) where
     insert (x :<->: xs) (m :<=>: ms) = x:m :<=>: insert xs ms
 
 class PolyMapClassWithNat (n :: Nat) (as :: [*]) where
-    member :: NatProxy n -> TypeAt n as -> PolyMap as -> Bool
+    member :: Proxy n -> TypeAt n as -> PolyMap as -> Bool
 
 instance PolyMapClassWithNat n '[] where
-    member NatProxy _ UnitPolyMap = False
+    member Proxy _ UnitPolyMap = False
 
 instance Eq a => PolyMapClassWithNat 'Z (a ': as) where
-    member NatProxy x (xs :<=>: _) = elem x xs
+    member Proxy x (xs :<=>: _) = elem x xs
 
 instance (PolyMapClassWithNat n as) => PolyMapClassWithNat ('S n) (a ': as) where
-    member NatProxy x (_ :<=>: ms) = member (NatProxy :: NatProxy n) x ms
+    member Proxy x (_ :<=>: ms) = member (Proxy :: Proxy n) x ms
