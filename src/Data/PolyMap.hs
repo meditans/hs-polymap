@@ -21,8 +21,7 @@
 -}
 
 module Data.PolyMap
-( Nat(..)
-, Relation(..)
+( Relation(..)
 , PolyMap
 , Data.PolyMap.null
 , size
