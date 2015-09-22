@@ -26,6 +26,7 @@ module Data.PolyMap
 , Data.PolyMap.null
 , size
 , member
+, notMember
 , empty
 , singleton
 , insert
@@ -91,14 +92,17 @@ instance PolyMapClass as => PolyMapClass (a ': as) where
     singleton (x :<->: xs) = [x] :<=>: singleton xs
     insert (x :<->: xs) (m :<=>: ms) = x:m :<=>: insert xs ms
 
-class PolyMapClassWithNat (n :: Nat) (as :: [*]) where
+class PolyMapLookup (n :: Nat) (as :: [*]) where
     member :: Proxy n -> TypeAt n as -> PolyMap as -> Bool
 
-instance PolyMapClassWithNat n '[] where
+instance PolyMapLookup n '[] where
     member Proxy _ UnitPolyMap = False
 
-instance Eq a => PolyMapClassWithNat 'Z (a ': as) where
+instance Eq a => PolyMapLookup 'Z (a ': as) where
     member Proxy x (xs :<=>: _) = elem x xs
 
-instance (PolyMapClassWithNat n as) => PolyMapClassWithNat ('S n) (a ': as) where
+instance (PolyMapLookup n as) => PolyMapLookup ('S n) (a ': as) where
     member Proxy x (_ :<=>: ms) = member (Proxy :: Proxy n) x ms
+
+notMember :: PolyMapLookup n as => Proxy n -> TypeAt n as -> PolyMap as -> Bool
+notMember p x m = not (member p x m)
