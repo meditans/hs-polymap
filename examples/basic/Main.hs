@@ -10,6 +10,7 @@ main = do
                             , show twoPM
                             , show (PM.member first "one" twoPM)
                             , show (PM.notMember first "asdf" twoPM)
+                            , show (PM.relationAt 2 twoPM)
                             ]
 
 empty :: PM.PolyMap '[String, Integer]
