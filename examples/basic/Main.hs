@@ -5,8 +5,12 @@ import Data.PolyMap (Relation((:<->:)))
 import qualified Data.PolyMap as PM
 
 main = do
-    sequence $ map print [empty, singleton, twoPM]
-    print $ PM.member (Proxy :: Proxy Z) "one" twoPM
+    sequence $ map putStrLn [ show empty
+                            , show singleton
+                            , show twoPM
+                            , show (PM.member first "one" twoPM)
+                            , show (PM.notMember first "asdf" twoPM)
+                            ]
 
 empty :: PM.PolyMap '[String, Integer]
 empty = PM.empty
