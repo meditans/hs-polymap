@@ -22,6 +22,7 @@
 
 module Data.PolyMap
 ( module Data.PolyMap.Relation
+, Set
 , PolyMap
 , SimplePolyMap
 , Data.PolyMap.null
@@ -36,6 +37,7 @@ module Data.PolyMap
 , relationAt
 ) where
 
+import Data.Set (Set)
 import Data.PolyMap.Nat
 import Data.PolyMap.Relation
 import Data.PolyMap.Storage (Storage)
@@ -91,7 +93,7 @@ instance (Storage s a, PolyMapClass as) => PolyMapClass ('(a, s) ': as) where
     empty = mempty :<=>: empty
     singleton' (x :<->: xs) = S.singleton x :<=>: singleton' xs
     insert' (x :<->: xs) (m :<=>: ms) = mconcat [m, (S.singleton x)] :<=>: insert' xs ms
-    relationAt i (m :<=>: ms) = (:<->:) <$> S.elemAt i m <*> relationAt i ms
+    relationAt i (m :<=>: ms) = (:<->:) <$> S.lookupElem i m <*> relationAt i ms
 
 class PolyMapLookup (n :: Nat) (as :: [(*, * -> *)]) where
     member :: Proxy n -> TypeAt n (MapFst as) -> PolyMap as -> Bool
