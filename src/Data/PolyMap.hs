@@ -38,22 +38,8 @@ module Data.PolyMap
 
 import Data.PolyMap.Nat
 import Data.PolyMap.Relation
-import Data.PolyMap.Storage
-
-listElemAt :: Int -> [a] -> Maybe a
-listElemAt i xs
-    | i < 0     = Nothing
-    | otherwise = f i xs
-  where f _ []     = Nothing
-        f 0 (x:_)  = Just x
-        f i (_:xs) = f (i - 1) xs
-
-listLookupIndex :: Eq a => a -> [a] -> Maybe Int
-listLookupIndex k xs = f 0 xs
-  where f _ [] = Nothing
-        f i (x:xs)
-            | x == k    = Just i
-            | otherwise = f (i + 1) xs
+import Data.PolyMap.Storage (Storage)
+import qualified Data.PolyMap.Storage as S
 
 type family HasType a (as :: [*]) :: Bool where
     HasType a '[] = 'False
@@ -74,14 +60,14 @@ type family MapFst (as :: [(k0, k1)]) :: [k0] where
 
 data family PolyMap (as :: [(*, * -> *)])
 data instance PolyMap '[] = UnitPolyMap
-data instance PolyMap ('(a, s) ': as) = [a] :<=>: PolyMap as
+data instance PolyMap ('(a, s) ': as) = s a :<=>: PolyMap as
 
 type SimplePolyMap (as :: [*]) (f :: * -> *) = PolyMap (MapStorage f as)
 
 infixr 4 :<=>:
 
 deriving instance Show (PolyMap '[])
-deriving instance (Show a, Show (PolyMap as)) => Show (PolyMap ('(a, s) ': as))
+deriving instance (Show a, Show (s a), Show (PolyMap as)) => Show (PolyMap ('(a, s) ': as))
 
 class PolyMapClass (as :: [(*, * -> *)]) where
     null :: PolyMap as -> Bool
@@ -99,13 +85,13 @@ instance PolyMapClass '[] where
     insert' UnitRelation UnitPolyMap = UnitPolyMap
     relationAt _ UnitPolyMap = Just UnitRelation
 
-instance (Storage (s a), PolyMapClass as) => PolyMapClass ('(a, s) ': as) where
+instance (Storage s a, PolyMapClass as) => PolyMapClass ('(a, s) ': as) where
     null (xs :<=>: _) = Prelude.null xs
     size (xs :<=>: _) = length xs
-    empty = [] :<=>: empty
-    singleton' (x :<->: xs) = [x] :<=>: singleton' xs
-    insert' (x :<->: xs) (m :<=>: ms) = m ++ [x]:<=>: insert' xs ms
-    relationAt i (m :<=>: ms) = (:<->:) <$> listElemAt i m <*> relationAt i ms
+    empty = mempty :<=>: empty
+    singleton' (x :<->: xs) = S.singleton x :<=>: singleton' xs
+    insert' (x :<->: xs) (m :<=>: ms) = mconcat [m, (S.singleton x)] :<=>: insert' xs ms
+    relationAt i (m :<=>: ms) = (:<->:) <$> S.elemAt i m <*> relationAt i ms
 
 class PolyMapLookup (n :: Nat) (as :: [(*, * -> *)]) where
     member :: Proxy n -> TypeAt n (MapFst as) -> PolyMap as -> Bool
@@ -115,11 +101,11 @@ instance PolyMapLookup n '[] where
     member Proxy _ UnitPolyMap = False
     lookupIndex Proxy _ UnitPolyMap = Nothing
 
-instance (Eq a, Storage (s a)) => PolyMapLookup 'Z ('(a, s) ': as) where
+instance (Eq a, Storage s a) => PolyMapLookup 'Z ('(a, s) ': as) where
     member Proxy x (xs :<=>: _) = elem x xs
-    lookupIndex Proxy x (xs :<=>: _) = listLookupIndex x xs
+    lookupIndex Proxy x (xs :<=>: _) = S.lookupIndex x xs
 
-instance (Storage (s a), PolyMapLookup n as) => PolyMapLookup ('S n) ('(a, s) ': as) where
+instance (Storage s a, PolyMapLookup n as) => PolyMapLookup ('S n) ('(a, s) ': as) where
     member Proxy x (_ :<=>: ms) = member (Proxy :: Proxy n) x ms
     lookupIndex Proxy x (_ :<=>: ms) = lookupIndex (Proxy :: Proxy n) x ms
 
