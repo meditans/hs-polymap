@@ -63,20 +63,20 @@ type family TypeAt (n :: Nat) (as :: [*]) where
     TypeAt 'Z (a ': as) = a
     TypeAt ('S n) (a ': as) = TypeAt n as
 
-type family MapFst (as :: [(*, *)]) :: [*] where
+type family MapFst (as :: [(k0, k1)]) :: [k0] where
     MapFst '[] = '[]
     MapFst ('(a, b) ': as) = a ': MapFst as
 
-data family PolyMap (as :: [(*, *)]) :: *
+data family PolyMap (as :: [(*, * -> *)])
 data instance PolyMap '[] = UnitPolyMap
-data instance PolyMap ('(a, b) ': as) = [a] :<=>: PolyMap as
+data instance PolyMap ('(a, s) ': as) = [a] :<=>: PolyMap as
 
 infixr 4 :<=>:
 
 deriving instance Show (PolyMap '[])
-deriving instance (Show a, Show (PolyMap as)) => Show (PolyMap ('(a, b) ': as))
+deriving instance (Show a, Show (PolyMap as)) => Show (PolyMap ('(a, s) ': as))
 
-class PolyMapClass (as :: [(*, *)]) where
+class PolyMapClass (as :: [(*, * -> *)]) where
     null :: PolyMap as -> Bool
     size :: PolyMap as -> Int
     empty :: PolyMap as
@@ -92,7 +92,7 @@ instance PolyMapClass '[] where
     insert' UnitRelation UnitPolyMap = UnitPolyMap
     relationAt _ UnitPolyMap = Just UnitRelation
 
-instance PolyMapClass as => PolyMapClass ('(a, b) ': as) where
+instance (Storage (s a), PolyMapClass as) => PolyMapClass ('(a, s) ': as) where
     null (xs :<=>: _) = Prelude.null xs
     size (xs :<=>: _) = length xs
     empty = [] :<=>: empty
@@ -100,7 +100,7 @@ instance PolyMapClass as => PolyMapClass ('(a, b) ': as) where
     insert' (x :<->: xs) (m :<=>: ms) = m ++ [x]:<=>: insert' xs ms
     relationAt i (m :<=>: ms) = (:<->:) <$> listElemAt i m <*> relationAt i ms
 
-class PolyMapLookup (n :: Nat) (as :: [(*, *)]) where
+class PolyMapLookup (n :: Nat) (as :: [(*, * -> *)]) where
     member :: Proxy n -> TypeAt n (MapFst as) -> PolyMap as -> Bool
     lookupIndex :: Proxy n -> TypeAt n (MapFst as) -> PolyMap as -> Maybe Int
 
@@ -108,11 +108,11 @@ instance PolyMapLookup n '[] where
     member Proxy _ UnitPolyMap = False
     lookupIndex Proxy _ UnitPolyMap = Nothing
 
-instance Eq a => PolyMapLookup 'Z ('(a, b) ': as) where
+instance (Eq a, Storage (s a)) => PolyMapLookup 'Z ('(a, s) ': as) where
     member Proxy x (xs :<=>: _) = elem x xs
     lookupIndex Proxy x (xs :<=>: _) = listLookupIndex x xs
 
-instance (PolyMapLookup n as) => PolyMapLookup ('S n) ('(a, b) ': as) where
+instance (Storage (s a), PolyMapLookup n as) => PolyMapLookup ('S n) ('(a, s) ': as) where
     member Proxy x (_ :<=>: ms) = member (Proxy :: Proxy n) x ms
     lookupIndex Proxy x (_ :<=>: ms) = lookupIndex (Proxy :: Proxy n) x ms
 

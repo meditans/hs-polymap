@@ -15,10 +15,10 @@ main = do
                             , show (PM.lookup first "two" twoPM)
                             ]
 
-empty :: PM.PolyMap '[ '(String, ()), '(Integer, ()) ]
+empty :: PM.PolyMap '[ '(String, []), '(Integer, []) ]
 empty = PM.empty
 
-singleton :: PM.PolyMap '[ '(String, ()), '(Integer, ()) ]
+singleton :: PM.PolyMap '[ '(String, []), '(Integer, []) ]
 singleton = PM.singleton ("one", 1 :: Integer)
 
 twoPM = PM.insert ("two", 2 :: Integer) singleton
