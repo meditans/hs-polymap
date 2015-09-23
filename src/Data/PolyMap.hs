@@ -23,6 +23,7 @@
 module Data.PolyMap
 ( module Data.PolyMap.Relation
 , PolyMap
+, SimplePolyMap
 , Data.PolyMap.null
 , size
 , member
@@ -63,6 +64,10 @@ type family TypeAt (n :: Nat) (as :: [*]) where
     TypeAt 'Z (a ': as) = a
     TypeAt ('S n) (a ': as) = TypeAt n as
 
+type family MapStorage (f :: kf) (as :: [k0]) :: [(k0, kf)] where
+    MapStorage f '[] = '[]
+    MapStorage f (a ': as) = '(a, f) ': MapStorage f as
+
 type family MapFst (as :: [(k0, k1)]) :: [k0] where
     MapFst '[] = '[]
     MapFst ('(a, b) ': as) = a ': MapFst as
@@ -70,6 +75,8 @@ type family MapFst (as :: [(k0, k1)]) :: [k0] where
 data family PolyMap (as :: [(*, * -> *)])
 data instance PolyMap '[] = UnitPolyMap
 data instance PolyMap ('(a, s) ': as) = [a] :<=>: PolyMap as
+
+type SimplePolyMap (as :: [*]) (f :: * -> *) = PolyMap (MapStorage f as)
 
 infixr 4 :<=>:
 
