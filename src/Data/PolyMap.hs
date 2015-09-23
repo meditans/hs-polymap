@@ -26,9 +26,11 @@ module Data.PolyMap
 , size
 , member
 , notMember
+, Data.PolyMap.lookup
 , empty
 , singleton
 , insert
+, lookupIndex
 , relationAt
 ) where
 
@@ -42,6 +44,13 @@ listElemAt i xs
   where f _ []     = Nothing
         f 0 (x:_)  = Just x
         f i (_:xs) = f (i - 1) xs
+
+listLookupIndex :: Eq a => a -> [a] -> Maybe Int
+listLookupIndex k xs = f 0 xs
+  where f _ [] = Nothing
+        f i (x:xs)
+            | x == k    = Just i
+            | otherwise = f (i + 1) xs
 
 type family HasType a (as :: [*]) :: Bool where
     HasType a '[] = 'False
@@ -87,23 +96,27 @@ instance PolyMapClass as => PolyMapClass (a ': as) where
 
 class PolyMapLookup (n :: Nat) (as :: [*]) where
     member :: Proxy n -> TypeAt n as -> PolyMap as -> Bool
+    lookupIndex :: Proxy n -> TypeAt n as -> PolyMap as -> Maybe Int
 
 instance PolyMapLookup n '[] where
     member Proxy _ UnitPolyMap = False
+    lookupIndex Proxy _ UnitPolyMap = Nothing
 
 instance Eq a => PolyMapLookup 'Z (a ': as) where
     member Proxy x (xs :<=>: _) = elem x xs
+    lookupIndex Proxy x (xs :<=>: _) = listLookupIndex x xs
 
 instance (PolyMapLookup n as) => PolyMapLookup ('S n) (a ': as) where
     member Proxy x (_ :<=>: ms) = member (Proxy :: Proxy n) x ms
+    lookupIndex Proxy x (_ :<=>: ms) = lookupIndex (Proxy :: Proxy n) x ms
 
 notMember :: PolyMapLookup n as => Proxy n -> TypeAt n as -> PolyMap as -> Bool
 notMember proxy x m = not (member proxy x m)
 
---lookup :: Proxy n -> TypeAt n as -> PolyMap as -> Maybe (TypeAt n as)
---lookup proxy x m = case lookup' Z proxy x m of
---    Nothing -> Nothing
---    Just i  -> 
+lookup :: (PolyMapClass as, PolyMapLookup n as) => Proxy n -> TypeAt n as -> PolyMap as -> Maybe (Relation as)
+lookup proxy x m = case lookupIndex proxy x m of
+    Nothing -> Nothing
+    Just i  -> relationAt i m
 
 singleton :: (PolyMapClass as, ToRelation a as) => a -> PolyMap as
 singleton r = singleton' (toRelation r)
