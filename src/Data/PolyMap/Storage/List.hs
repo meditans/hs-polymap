@@ -9,10 +9,12 @@
   Stability   : unstable
   Portability : non-portable (GHC extensions)
 
-  Storage instance for [].
+  Storage instance for lists.
 -}
 
-module Data.PolyMap.Storage.List where
+module Data.PolyMap.Storage.List
+(
+) where
 
 import Data.PolyMap.Storage
 

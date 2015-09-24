@@ -9,7 +9,7 @@
   Stability   : unstable
   Portability : non-portable (GHC extensions)
 
-  Storage instance for Data.Set.
+  Storage instance for sets.
 -}
 
 module Data.PolyMap.Storage.Set

@@ -14,6 +14,9 @@ main = do
                             , show (PM.lookupRelation 2 twoPM)
                             , show (PM.lookup first "two" twoPM)
                             ]
+    case PM.lookup first "two" twoPM of
+        Nothing  -> error "failure"
+        Just rel -> print (first `PM.sideOf` rel)
 
 empty :: PM.SimplePolyMap '[String, Integer] PM.Set
 empty = PM.empty

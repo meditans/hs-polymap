@@ -6,6 +6,7 @@
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
+{-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE StandaloneDeriving #-}
 
 {-|
@@ -18,8 +19,26 @@
   Relation type family and helper function to create relations from tuples.
 -}
 
-module Data.PolyMap.Relation where
+module Data.PolyMap.Relation
+(
+-- * Relation Type
+  Relation(..)
 
+-- * Query
+, sideAt
+, sideOf
+
+-- * Construction
+, ToRelation(..)
+) where
+
+import Data.PolyMap.Nat
+
+type family TypeAt (n :: Nat) (as :: [*]) where
+    TypeAt 'Z (a ': as) = a
+    TypeAt ('S n) (a ': as) = TypeAt n as
+
+-- |A relation whose sides are defined by a list of types.
 data family Relation (as :: [*])
 data instance Relation '[] = UnitRelation
 data instance Relation (a ': as) = a :<->: Relation as
@@ -29,7 +48,26 @@ infixr 4 :<->:
 deriving instance Show (Relation '[])
 deriving instance (Show a, Show (Relation as)) => Show (Relation (a ': as))
 
-class ToRelation a (as :: [*]) where toRelation :: a -> Relation as
+class RelationSideAt (n :: Nat) (as :: [*]) where
+    -- |Retrieve the value at the specified side of the relation.
+    sideAt :: Proxy n -> Relation as -> TypeAt n as
+
+instance RelationSideAt 'Z (a ': as) where
+    sideAt Proxy (x :<->: _) = x
+
+instance RelationSideAt n as => RelationSideAt ('S n) (a ': as) where
+    sideAt Proxy (_ :<->: xs) = sideAt (Proxy :: Proxy n) xs
+
+-- |Infix variant of 'sideAt'.
+sideOf :: RelationSideAt n as => Proxy n -> Relation as -> TypeAt n as
+sideOf = sideAt
+infix 3 `sideOf`
+
+-- |Typeclass for data types that can be used to construct a relation.
+class ToRelation a (as :: [*]) where
+    -- |Construct a relation from a compatible instance.
+    toRelation :: a -> Relation as
+
 instance ToRelation (Relation as) as where toRelation r = r
 instance ToRelation ()                                       '[]                                       where
     toRelation ()                                       =                                                                                           UnitRelation
