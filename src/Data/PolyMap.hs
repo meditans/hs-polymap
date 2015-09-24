@@ -75,7 +75,7 @@ data family PolyMap (as :: [(*, * -> *)])
 data instance PolyMap '[] = UnitPolyMap
 data instance PolyMap ('(a, s) ': as) = s a :<=>: PolyMap as
 
-type SimplePolyMap (as :: [*]) (f :: * -> *) = PolyMap (MapStorage f as)
+type SimplePolyMap (as :: [*]) (s :: * -> *) = PolyMap (MapStorage s as)
 
 infixr 4 :<=>:
 
