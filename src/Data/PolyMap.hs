@@ -44,7 +44,7 @@ module Data.PolyMap
 
 -- * Indexed
 , lookupIndex
-, relationAt
+, lookupRelation
 ) where
 
 import Data.PolyMap.Nat
@@ -97,7 +97,7 @@ class PolyMapClass (as :: [(*, * -> *)]) where
     -- |Retrieve a relation by its /index/, i.e. by the zero-based index of the
     -- storage of each of its sides. The index is a number from /0/ up to, but
     -- not including, the 'size' of the polymap.
-    relationAt :: Int -> PolyMap as -> Maybe (Relation (MapFst as))
+    lookupRelation :: Int -> PolyMap as -> Maybe (Relation (MapFst as))
 
     singleton' :: Relation (MapFst as) -> PolyMap as
     insert' :: Relation (MapFst as) -> PolyMap as -> PolyMap as
@@ -108,7 +108,7 @@ instance PolyMapClass '[] where
     empty = UnitPolyMap
     singleton' UnitRelation = UnitPolyMap
     insert' UnitRelation UnitPolyMap = UnitPolyMap
-    relationAt _ UnitPolyMap = Just UnitRelation
+    lookupRelation _ UnitPolyMap = Just UnitRelation
 
 instance (Storage s a, PolyMapClass as) => PolyMapClass ('(a, s) ': as) where
     null (xs :<=>: _) = Prelude.null xs
@@ -116,7 +116,7 @@ instance (Storage s a, PolyMapClass as) => PolyMapClass ('(a, s) ': as) where
     empty = mempty :<=>: empty
     singleton' (x :<->: xs) = S.singleton x :<=>: singleton' xs
     insert' (x :<->: xs) (m :<=>: ms) = mconcat [m, (S.singleton x)] :<=>: insert' xs ms
-    relationAt i (m :<=>: ms) = (:<->:) <$> S.lookupElem i m <*> relationAt i ms
+    lookupRelation i (m :<=>: ms) = (:<->:) <$> S.lookupElem i m <*> lookupRelation i ms
 
 class PolyMapLookup (n :: Nat) (as :: [(*, * -> *)]) where
     -- |Is the key a member at the specified side of the polymap.
@@ -150,7 +150,7 @@ notMember proxy x m = not (member proxy x m)
 lookup :: (PolyMapClass as, PolyMapLookup n as) => Proxy n -> TypeAt n (MapFst as) -> PolyMap as -> Maybe (Relation (MapFst as))
 lookup proxy x m = case lookupIndex proxy x m of
     Nothing -> Nothing
-    Just i  -> relationAt i m
+    Just i  -> lookupRelation i m
 
 -- |A polymap with a single relation.
 singleton :: (PolyMapClass as, ToRelation a (MapFst as)) => a -> PolyMap as
