@@ -1,7 +1,7 @@
 name:                polymap
 version:             0.1.0.1
-synopsis:            Polydirectional maps
-description:         Polydirectional maps for Haskell with flexible storage.
+synopsis:            Polygonal maps
+description:         Polygonal maps for Haskell with flexible storage.
 license:             PublicDomain
 license-file:        LICENSE
 author:              David Farrell

@@ -17,7 +17,7 @@
   Stability   : unstable
   Portability : non-portable (GHC extensions)
 
-  Polydirectional maps for Haskell with flexible storage.
+  Polygonal maps for Haskell with flexible storage.
 -}
 
 module Data.PolyMap
