@@ -1,5 +1,5 @@
 name:                polymap
-version:             0.1.0.1
+version:             0.1.1.0
 synopsis:            Polygonal maps
 description:         Polygonal maps for Haskell with flexible storage.
 license:             PublicDomain
