@@ -22,4 +22,7 @@ import Data.PolyMap.Storage
 instance Ord a => Storage S.Set a where
     singleton x = S.singleton x
     lookupIndex k s = S.lookupIndex k s
-    lookupElem i s = S.lookupElem i s
+    -- TODO: use this when containers (hopefully) gets it: lookupElem i s = S.lookupElem i s
+    lookupElem i s
+        | i >= 0 && i < S.size s = Just (S.elemAt i s)
+        | otherwise              = Nothing
