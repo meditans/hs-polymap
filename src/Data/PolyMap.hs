@@ -71,10 +71,12 @@ type family MapFst (as :: [(k0, k1)]) :: [k0] where
     MapFst '[] = '[]
     MapFst ('(a, b) ': as) = a ': MapFst as
 
+-- |A polymap whose sides are defined by a list of types zipped with storage types.
 data family PolyMap (as :: [(*, * -> *)])
 data instance PolyMap '[] = UnitPolyMap
 data instance PolyMap ('(a, s) ': as) = s a :<=>: PolyMap as
 
+-- |A simple polymap whose sides are defined by a list of types and a single storage type.
 type SimplePolyMap (as :: [*]) (s :: * -> *) = PolyMap (MapStorage s as)
 
 infixr 4 :<=>:
@@ -83,12 +85,22 @@ deriving instance Show (PolyMap '[])
 deriving instance (Show a, Show (s a), Show (PolyMap as)) => Show (PolyMap ('(a, s) ': as))
 
 class PolyMapClass (as :: [(*, * -> *)]) where
+    -- |Is the polymap empty?
     null :: PolyMap as -> Bool
+
+    -- |The number of relations in the polymap.
     size :: PolyMap as -> Int
+
+    -- |The empty polymap.
     empty :: PolyMap as
+
+    -- |Retrieve a relation by its /index/, i.e. by the zero-based index of the
+    -- storage of each of its sides. The index is a number from /0/ up to, but
+    -- not including, the 'size' of the polymap.
+    relationAt :: Int -> PolyMap as -> Maybe (Relation (MapFst as))
+
     singleton' :: Relation (MapFst as) -> PolyMap as
     insert' :: Relation (MapFst as) -> PolyMap as -> PolyMap as
-    relationAt :: Int -> PolyMap as -> Maybe (Relation (MapFst as))
 
 instance PolyMapClass '[] where
     null UnitPolyMap = True
@@ -107,7 +119,12 @@ instance (Storage s a, PolyMapClass as) => PolyMapClass ('(a, s) ': as) where
     relationAt i (m :<=>: ms) = (:<->:) <$> S.lookupElem i m <*> relationAt i ms
 
 class PolyMapLookup (n :: Nat) (as :: [(*, * -> *)]) where
+    -- |Is the key a member at the specified side of the polymap.
     member :: Proxy n -> TypeAt n (MapFst as) -> PolyMap as -> Bool
+
+    -- |Lookup the /index/ of a key, which is its zero-based index in the storage
+    -- at the specified side of the polymap. The index is a number from /0/ up
+    -- to, but not including, the 'size' of the polymap.
     lookupIndex :: Proxy n -> TypeAt n (MapFst as) -> PolyMap as -> Maybe Int
 
 instance PolyMapLookup n '[] where
@@ -122,16 +139,23 @@ instance (Storage s a, PolyMapLookup n as) => PolyMapLookup ('S n) ('(a, s) ': a
     member Proxy x (_ :<=>: ms) = member (Proxy :: Proxy n) x ms
     lookupIndex Proxy x (_ :<=>: ms) = lookupIndex (Proxy :: Proxy n) x ms
 
+-- |Is the key not a member at the specified side of the polymap? See also 'member'.
 notMember :: PolyMapLookup n as => Proxy n -> TypeAt n (MapFst as) -> PolyMap as -> Bool
 notMember proxy x m = not (member proxy x m)
 
+-- |Lookup the value at a key at the specified side of the polymap.
+--
+-- The function will return the corresponding value as @('Just' value)@, or
+-- 'Nothing' if the key isn't at the specified side of the polymap.
 lookup :: (PolyMapClass as, PolyMapLookup n as) => Proxy n -> TypeAt n (MapFst as) -> PolyMap as -> Maybe (Relation (MapFst as))
 lookup proxy x m = case lookupIndex proxy x m of
     Nothing -> Nothing
     Just i  -> relationAt i m
 
+-- |A polymap with a single relation.
 singleton :: (PolyMapClass as, ToRelation a (MapFst as)) => a -> PolyMap as
 singleton r = singleton' (toRelation r)
 
+-- |Insert a new relation into the polymap.
 insert :: (PolyMapClass as, ToRelation a (MapFst as)) => a -> PolyMap as -> PolyMap as
 insert r m = insert' (toRelation r) m
