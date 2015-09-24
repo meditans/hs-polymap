@@ -22,26 +22,37 @@
 
 module Data.PolyMap
 ( module Data.PolyMap.Relation
-, Set
+, module Data.PolyMap.Storage.Set
+
+-- * PolyMap Type
 , PolyMap
 , SimplePolyMap
+
+-- * Query
 , Data.PolyMap.null
 , size
 , member
 , notMember
 , Data.PolyMap.lookup
+
+-- * Construction
 , empty
 , singleton
+
+-- * Insertion
 , insert
+
+-- * Indexed
 , lookupIndex
 , relationAt
 ) where
 
-import Data.Set (Set)
 import Data.PolyMap.Nat
 import Data.PolyMap.Relation
 import Data.PolyMap.Storage (Storage)
 import qualified Data.PolyMap.Storage as S
+import Data.PolyMap.Storage.List()
+import Data.PolyMap.Storage.Set
 
 type family HasType a (as :: [*]) :: Bool where
     HasType a '[] = 'False
