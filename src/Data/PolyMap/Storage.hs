@@ -15,12 +15,12 @@
 module Data.PolyMap.Storage
 ( Storage
 , singleton
-, lookupIndex
+, lookupIndices
 , lookupElem
 ) where
 
 -- |Typeclass for data types that can act as storage in a polymap.
 class (Monoid (s a), Foldable s) => Storage s a where
     singleton :: a -> s a
-    lookupIndex :: Eq a => a -> s a -> Maybe Int
+    lookupIndices :: Eq a => a -> s a -> [Int]
     lookupElem :: Int -> s a -> Maybe a

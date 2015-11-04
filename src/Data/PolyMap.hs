@@ -43,7 +43,7 @@ module Data.PolyMap
 , insert
 
 -- * Indexed
-, lookupIndex
+, lookupIndices
 , lookupRelation
 ) where
 
@@ -53,6 +53,8 @@ import Data.PolyMap.Storage (Storage)
 import qualified Data.PolyMap.Storage as S
 import Data.PolyMap.Storage.List()
 import Data.PolyMap.Storage.Set
+
+import Data.Maybe (maybeToList)
 
 type family HasType a (as :: [*]) :: Bool where
     HasType a '[] = 'False
@@ -97,7 +99,7 @@ class PolyMapClass (as :: [(*, * -> *)]) where
     -- |Retrieve a relation by its /index/, i.e. by the zero-based index of the
     -- storage of each of its sides. The index is a number from /0/ up to, but
     -- not including, the 'size' of the polymap.
-    lookupRelation :: Int -> PolyMap as -> Maybe (Relation (MapFst as))
+    lookupRelation :: Int -> PolyMap as -> [Relation (MapFst as)]
 
     singleton' :: Relation (MapFst as) -> PolyMap as
     insert' :: Relation (MapFst as) -> PolyMap as -> PolyMap as
@@ -108,7 +110,7 @@ instance PolyMapClass '[] where
     empty = UnitPolyMap
     singleton' UnitRelation = UnitPolyMap
     insert' UnitRelation UnitPolyMap = UnitPolyMap
-    lookupRelation _ UnitPolyMap = Just UnitRelation
+    lookupRelation _ UnitPolyMap = [UnitRelation]
 
 instance (Storage s a, PolyMapClass as) => PolyMapClass ('(a, s) ': as) where
     null (xs :<=>: _) = Prelude.null xs
@@ -116,28 +118,28 @@ instance (Storage s a, PolyMapClass as) => PolyMapClass ('(a, s) ': as) where
     empty = mempty :<=>: empty
     singleton' (x :<->: xs) = S.singleton x :<=>: singleton' xs
     insert' (x :<->: xs) (m :<=>: ms) = mconcat [m, (S.singleton x)] :<=>: insert' xs ms
-    lookupRelation i (m :<=>: ms) = (:<->:) <$> S.lookupElem i m <*> lookupRelation i ms
+    lookupRelation i (m :<=>: ms) = (:<->:) <$> maybeToList (S.lookupElem i m) <*> lookupRelation i ms
 
 class PolyMapLookup (n :: Nat) (as :: [(*, * -> *)]) where
     -- |Is the key a member at the specified side of the polymap.
     member :: Proxy n -> TypeAt n (MapFst as) -> PolyMap as -> Bool
 
-    -- |Lookup the /index/ of a key, which is its zero-based index in the storage
-    -- at the specified side of the polymap. The index is a number from /0/ up
-    -- to, but not including, the 'size' of the polymap.
-    lookupIndex :: Proxy n -> TypeAt n (MapFst as) -> PolyMap as -> Maybe Int
+    -- |Lookup the possible /indexes/ of a key, which are its zero-based index
+    -- in the storage at the specified side of the polymap. An index is a number
+    -- from /0/ up to, but not including, the 'size' of the polymap.
+    lookupIndices :: Proxy n -> TypeAt n (MapFst as) -> PolyMap as -> [Int]
 
 instance PolyMapLookup n '[] where
     member Proxy _ UnitPolyMap = False
-    lookupIndex Proxy _ UnitPolyMap = Nothing
+    lookupIndices Proxy _ UnitPolyMap = []
 
 instance (Eq a, Storage s a) => PolyMapLookup 'Z ('(a, s) ': as) where
     member Proxy x (xs :<=>: _) = elem x xs
-    lookupIndex Proxy x (xs :<=>: _) = S.lookupIndex x xs
+    lookupIndices Proxy x (xs :<=>: _) = S.lookupIndices x xs
 
 instance (Storage s a, PolyMapLookup n as) => PolyMapLookup ('S n) ('(a, s) ': as) where
     member Proxy x (_ :<=>: ms) = member (Proxy :: Proxy n) x ms
-    lookupIndex Proxy x (_ :<=>: ms) = lookupIndex (Proxy :: Proxy n) x ms
+    lookupIndices Proxy x (_ :<=>: ms) = lookupIndices (Proxy :: Proxy n) x ms
 
 -- |Is the key not a member at the specified side of the polymap? See also 'member'.
 notMember :: PolyMapLookup n as => Proxy n -> TypeAt n (MapFst as) -> PolyMap as -> Bool
@@ -147,10 +149,8 @@ notMember proxy x m = not (member proxy x m)
 --
 -- The function will return the corresponding value as @('Just' value)@, or
 -- 'Nothing' if the key isn't at the specified side of the polymap.
-lookup :: (PolyMapClass as, PolyMapLookup n as) => Proxy n -> TypeAt n (MapFst as) -> PolyMap as -> Maybe (Relation (MapFst as))
-lookup proxy x m = case lookupIndex proxy x m of
-    Nothing -> Nothing
-    Just i  -> lookupRelation i m
+lookup :: (PolyMapClass as, PolyMapLookup n as) => Proxy n -> TypeAt n (MapFst as) -> PolyMap as -> [Relation (MapFst as)]
+lookup proxy x m = concatMap (flip lookupRelation m) (lookupIndices proxy x m)
 
 -- |A polymap with a single relation.
 singleton :: (PolyMapClass as, ToRelation a (MapFst as)) => a -> PolyMap as

@@ -17,14 +17,11 @@ module Data.PolyMap.Storage.List
 ) where
 
 import Data.PolyMap.Storage
+import Data.List (elemIndices)
 
 instance Storage [] a where
     singleton x = [x]
-    lookupIndex k xs = f 0 xs
-      where f _ [] = Nothing
-            f i (x:xs)
-                | x == k    = Just i
-                | otherwise = f (i + 1) xs
+    lookupIndices = elemIndices
     lookupElem i xs
         | i < 0     = Nothing
         | otherwise = f i xs
